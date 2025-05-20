@@ -211,6 +211,8 @@ return {
       local servers = {
         -- clangd = {},
         gopls = {
+          -- cmd = { '/opt/homebrew/bin/gopls', '-remote=auto', '-rpc.trace', '-v' },
+          -- test command for daemon mode
           cmd = { '/opt/homebrew/bin/gopls', '-remote=auto', '-rpc.trace', '-v' },
           flags = {
             debounce_text_changes = 1000,
@@ -267,10 +269,9 @@ return {
           },
         },
         pyright = {},
-        -- rust_analyzer = {},
+        rust_analyzer = {},
         -- tsserver = {},
         -- html = { filetypes = { 'html', 'twig', 'hbs'} },
-
         lua_ls = {
           Lua = {
             workspace = { checkThirdParty = false },
@@ -278,6 +279,24 @@ return {
             -- NOTE: toggle below to ignore Lua_LS's noisy `missing-fields` warnings
             -- diagnostics = { disable = { 'missing-fields' } },
           },
+        },
+      }
+      require('lspconfig.configs').ulsp = {
+        default_config = {
+          cmd = { 'socat', '-', 'tcp:localhost:27883,ignoreeof' },
+          flags = {
+            debounce_text_changes = 1000,
+          },
+          capabilities = vim.lsp.protocol.make_client_capabilities(),
+          filetypes = { 'go', 'java' },
+          root_dir = function(fname)
+            local result = require('lspconfig.async').run_command { 'git', 'rev-parse', '--show-toplevel' }
+            if result and result[1] then
+              return vim.trim(result[1])
+            end
+            return require('lspconfig.util').root_pattern '.git'(fname)
+          end,
+          single_file_support = false,
         },
       }
 
@@ -308,6 +327,9 @@ return {
             if server_name == 'gopls' then
               return
             end
+            if server_name == 'ulsp' then
+              return
+            end
 
             local server = servers[server_name] or {}
             -- This handles overriding only values explicitly passed
@@ -319,12 +341,18 @@ return {
         },
       }
 
+      require('lspconfig')['ulsp'].setup {
+        cmd = { 'socat', '-', 'tcp:localhost:27883,ignoreeof' },
+      }
+
       require('lspconfig').gopls.setup {
         cmd = { '/opt/homebrew/bin/gopls', '-remote=auto', '-rpc.trace', '-v' },
         flags = {
           debounce_text_changes = 1000,
         },
-        on_attach = on_attach,
+        init_options = {
+          gofumpt = true,
+        },
         settings = servers['gopls'],
         filetypes = (servers['gopls'] or {}).filetypes,
       }

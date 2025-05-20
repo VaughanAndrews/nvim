@@ -45,7 +45,7 @@ require('lazy').setup({
 
   require 'kickstart/plugins/md',
 
-  require 'kickstart/plugins/lint',
+  -- require 'kickstart/plugins/lint',
 
   require 'kickstart/plugins/dashboard',
 
